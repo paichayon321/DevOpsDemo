@@ -1,0 +1,171 @@
+{
+    "apiVersion": "v1",
+    "kind": "DeploymentConfig",
+    "metadata": {
+        "annotations": {
+            "openshift.io/generated-by": "OpenShiftNewApp"
+        },
+        "creationTimestamp": "2017-07-30T14:35:17Z",
+        "generation": 27,
+        "labels": {
+            "app": "nationalparks"
+        },
+        "name": "nationalparks",
+        "namespace": "dev",
+        "resourceVersion": "43936",
+        "selfLink": "/oapi/v1/namespaces/dev/deploymentconfigs/nationalparks",
+        "uid": "4e9c8a3a-7534-11e7-9d7d-080027dec1db"
+    },
+    "spec": {
+        "replicas": 1,
+        "selector": {
+            "app": "nationalparks",
+            "deploymentconfig": "nationalparks"
+        },
+        "strategy": {
+            "activeDeadlineSeconds": 21600,
+            "resources": {},
+            "rollingParams": {
+                "intervalSeconds": 1,
+                "maxSurge": "25%",
+                "maxUnavailable": "25%",
+                "timeoutSeconds": 600,
+                "updatePeriodSeconds": 1
+            },
+            "type": "Rolling"
+        },
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "openshift.io/generated-by": "OpenShiftNewApp"
+                },
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "nationalparks",
+                    "deploymentconfig": "nationalparks"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "env": [
+                            {
+                                "name": "MONGODB_SERVER_HOST",
+                                "valueFrom": {
+                                    "configMapKeyRef": {
+                                        "key": "mongodb.server.host",
+                                        "name": "nationalparks"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "MONGODB_SERVER_PORT",
+                                "valueFrom": {
+                                    "configMapKeyRef": {
+                                        "key": "mongodb.server.port",
+                                        "name": "nationalparks"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "MONGODB_USER",
+                                "valueFrom": {
+                                    "configMapKeyRef": {
+                                        "key": "mongodb.user",
+                                        "name": "nationalparks"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "MONGODB_PASSWORD",
+                                "valueFrom": {
+                                    "configMapKeyRef": {
+                                        "key": "mongodb.password",
+                                        "name": "nationalparks"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "MONGODB_DATABASE",
+                                "valueFrom": {
+                                    "configMapKeyRef": {
+                                        "key": "mongodb.database",
+                                        "name": "nationalparks"
+                                    }
+                                }
+                            }
+                        ],
+                        "image": "172.30.238.11:5000/dev/nationalparks@sha256:2b69ff3e5dd9b0508c4287e2c31b6b93920806b73ff891b3132da69b934aea18",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "nationalparks",
+                        "resources": {},
+                        "terminationMessagePath": "/dev/termination-log"
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "restartPolicy": "Always",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 30
+            }
+        },
+        "test": false,
+        "triggers": [
+            {
+                "imageChangeParams": {
+                    "automatic": true,
+                    "containerNames": [
+                        "nationalparks"
+                    ],
+                    "from": {
+                        "kind": "ImageStreamTag",
+                        "name": "nationalparks:DevelopmentReady-1.0.0",
+                        "namespace": "dev"
+                    },
+                    "lastTriggeredImage": "172.30.238.11:5000/dev/nationalparks@sha256:2b69ff3e5dd9b0508c4287e2c31b6b93920806b73ff891b3132da69b934aea18"
+                },
+                "type": "ImageChange"
+            }
+        ]
+    },
+    "status": {
+        "availableReplicas": 1,
+        "conditions": [
+            {
+                "lastTransitionTime": "2017-08-07T08:16:11Z",
+                "lastUpdateTime": "2017-08-07T08:16:11Z",
+                "message": "Deployment config has minimum availability.",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "lastTransitionTime": "2017-08-07T12:24:49Z",
+                "lastUpdateTime": "2017-08-07T12:24:52Z",
+                "message": "replication controller \"nationalparks-11\" successfully rolled out",
+                "reason": "NewReplicationControllerAvailable",
+                "status": "True",
+                "type": "Progressing"
+            }
+        ],
+        "details": {
+            "causes": [
+                {
+                    "imageTrigger": {
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "nationalparks:DevelopmentReady-1.0.0",
+                            "namespace": "dev"
+                        }
+                    },
+                    "type": "ImageChange"
+                }
+            ],
+            "message": "image change"
+        },
+        "latestVersion": 11,
+        "observedGeneration": 27,
+        "readyReplicas": 1,
+        "replicas": 1,
+        "unavailableReplicas": 0,
+        "updatedReplicas": 1
+    }
+}

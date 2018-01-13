@@ -1,0 +1,106 @@
+{
+    "apiVersion": "v1",
+    "kind": "DeploymentConfig",
+    "metadata": {
+        "annotations": {
+            "openshift.io/generated-by": "OpenShiftNewApp"
+        },
+        "creationTimestamp": "2017-08-09T11:53:08Z",
+        "generation": 3,
+        "labels": {
+            "app": "nationalparks"
+        },
+        "name": "nationalparks",
+        "namespace": "gck-dev",
+        "resourceVersion": "10209039",
+        "selfLink": "/oapi/v1/namespaces/gck-dev/deploymentconfigs/nationalparks",
+        "uid": "4fe19adf-7cf9-11e7-bbc1-0682973451aa"
+    },
+    "spec": {
+        "replicas": 1,
+        "selector": {
+            "app": "nationalparks",
+            "deploymentconfig": "nationalparks"
+        },
+        "strategy": {
+            "activeDeadlineSeconds": 21600,
+            "resources": {},
+            "rollingParams": {
+                "intervalSeconds": 1,
+                "maxSurge": "25%",
+                "maxUnavailable": "25%",
+                "timeoutSeconds": 600,
+                "updatePeriodSeconds": 1
+            },
+            "type": "Rolling"
+        },
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "openshift.io/generated-by": "OpenShiftNewApp"
+                },
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "nationalparks",
+                    "deploymentconfig": "nationalparks"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "env": [
+                            {
+                                "name": "MONGODB_SERVER_HOST",
+                                "value": "national-parks-mongodb-gck-dev"
+                            },
+                            {
+                                "name": "MONGODB_SERVER_PORT",
+                                "value": "27017"
+                            },
+                            {
+                                "name": "MONGODB_USER",
+                                "value": "mongodb"
+                            },
+                            {
+                                "name": "MONGODB_PASSWORD",
+                                "value": "mongodb"
+                            },
+                            {
+                                "name": "MONGODB_DATABASE",
+                                "value": "mongodb"
+                            }
+                        ],
+                        "image": "172.30.160.227:5000/gck-dev/nationalparks:DevelopmentReady-1.0.0",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "nationalparks",
+                        "resources": {},
+                        "terminationMessagePath": "/dev/termination-log"
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "restartPolicy": "Always",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 30
+            }
+        },
+        "test": false,
+        "triggers": []
+    },
+    "status": {
+        "availableReplicas": 0,
+        "conditions": [
+            {
+                "lastTransitionTime": "2017-08-09T11:53:08Z",
+                "lastUpdateTime": "2017-08-09T11:53:08Z",
+                "message": "Deployment config does not have minimum availability.",
+                "status": "False",
+                "type": "Available"
+            }
+        ],
+        "latestVersion": 0,
+        "observedGeneration": 3,
+        "replicas": 0,
+        "unavailableReplicas": 0,
+        "updatedReplicas": 0
+    }
+}

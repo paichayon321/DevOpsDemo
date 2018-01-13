@@ -1,0 +1,78 @@
+
+Notes:
+
+1. Remove SNAPSHOOT from pom.xml and move the following to the top
+
+<groupId>com.openshift.evg.roadshow</groupId>
+    <artifactId>parksmap-web</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    
+
+2. create parksmap-web git and push the codes
+
+####################################################################################
+
+--- Development Environment Setup
+
+1. Provide view permission for serviceaccount:default
+
+oc policy add-role-to-user view system:serviceaccount:dev:default -n dev
+
+2. Label the nationalparks service
+
+oc label service nationalparks type=parksmap-backend -n dev
+
+3. Create the parksmap 
+
+oc new-build --binary=true --name="parksmap-web" redhat-openjdk18-openshift:latest -n dev
+oc new-app dev/parksmap-web:DevelopmentReady-1.0.0 --name=parksmap-web --allow-missing-imagestream-tags=true -n dev
+oc set triggers dc parksmap-web --remove-all -n dev
+oc env bc parksmap-web -e MAVEN_MIRROR_URL=http://nexus3-tools.ocp.demo.com/repository/maven-all-public -n dev
+oc expose dc parksmap-web --port 8080 -n dev
+oc expose svc parksmap-web -n dev
+
+3. create a new Jenkins task parksmap-web
+Note: need to add user.name and user.email at the jenkins's pipeline configuration. 
+
+####################################################################################
+---- Test Environment Setup
+
+1. Provide view permission for serviceaccount:default
+
+oc policy add-role-to-user view system:serviceaccount:test:default -n test
+
+2. Label the nationalparks service
+
+oc label service nationalparks type=parksmap-backend -n test
+
+3. Create the parksmap 
+
+oc new-build --binary=true --name="parksmap-web" redhat-openjdk18-openshift:latest -n test
+oc new-app dev/parksmap-web:TestReady-1.0.0 --name=parksmap-web --allow-missing-imagestream-tags=true -n test
+oc expose dc parksmap-web --port 8080 -n test
+oc expose svc parksmap-web -n test
+
+
+####################################################################################
+--- Prod Environment
+
+1. Provide view permission for serviceaccount:default
+
+oc policy add-role-to-user view system:serviceaccount:prod:default -n prod
+
+2. Create the parksmap 
+
+oc new-build --binary=true --name="parksmap-web-green" redhat-openjdk18-openshift:latest -n prod
+oc new-app dev/parksmap-web:ProdReady-1.0.0 --name=parksmap-web-green --allow-missing-imagestream-tags=true -n prod
+oc expose dc parksmap-web-green --port 8080 -n prod
+
+oc new-build --binary=true --name="parksmap-web-blue" redhat-openjdk18-openshift:latest -n prod
+oc new-app dev/parksmap-web:ProdReady-1.0.0 --name=parksmap-web-blue --allow-missing-imagestream-tags=true -n prod
+oc expose dc parksmap-web-blue --port 8080 -n prod
+
+oc expose svc/parksmap-web-green --name=parksmap-web-bluegreen -n prod
+
+
+
+####################################################################################

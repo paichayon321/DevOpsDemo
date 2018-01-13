@@ -1,0 +1,209 @@
+{
+    "apiVersion": "v1",
+    "kind": "DeploymentConfig",
+    "metadata": {
+        "annotations": {
+            "openshift.io/generated-by": "OpenShiftNewApp"
+        },
+        "creationTimestamp": "2017-08-09T11:52:56Z",
+        "generation": 2,
+        "labels": {
+            "app": "mongodb-persistent",
+            "template": "mongodb-persistent-template"
+        },
+        "name": "national-parks-mongodb-gck-dev",
+        "namespace": "gck-dev",
+        "resourceVersion": "10208944",
+        "selfLink": "/oapi/v1/namespaces/gck-dev/deploymentconfigs/national-parks-mongodb-gck-dev",
+        "uid": "48cffc73-7cf9-11e7-bbc1-0682973451aa"
+    },
+    "spec": {
+        "replicas": 1,
+        "selector": {
+            "name": "national-parks-mongodb-gck-dev"
+        },
+        "strategy": {
+            "activeDeadlineSeconds": 21600,
+            "recreateParams": {
+                "timeoutSeconds": 600
+            },
+            "resources": {},
+            "type": "Recreate"
+        },
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "openshift.io/generated-by": "OpenShiftNewApp"
+                },
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "mongodb-persistent",
+                    "name": "national-parks-mongodb-gck-dev"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "env": [
+                            {
+                                "name": "MONGODB_USER",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "key": "database-user",
+                                        "name": "national-parks-mongodb-gck-dev"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "MONGODB_PASSWORD",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "key": "database-password",
+                                        "name": "national-parks-mongodb-gck-dev"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "MONGODB_ADMIN_PASSWORD",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "key": "database-admin-password",
+                                        "name": "national-parks-mongodb-gck-dev"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "MONGODB_DATABASE",
+                                "value": "mongodb"
+                            }
+                        ],
+                        "image": "registry.access.redhat.com/rhscl/mongodb-32-rhel7@sha256:b9f3dda57d96f421ed8880634d356c7bf2d54d5015cba508417e36c4e9182489",
+                        "imagePullPolicy": "IfNotPresent",
+                        "livenessProbe": {
+                            "failureThreshold": 3,
+                            "initialDelaySeconds": 30,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "tcpSocket": {
+                                "port": 27017
+                            },
+                            "timeoutSeconds": 1
+                        },
+                        "name": "mongodb",
+                        "ports": [
+                            {
+                                "containerPort": 27017,
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "readinessProbe": {
+                            "exec": {
+                                "command": [
+                                    "/bin/sh",
+                                    "-i",
+                                    "-c",
+                                    "mongo 127.0.0.1:27017/$MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD --eval=\"quit()\""
+                                ]
+                            },
+                            "failureThreshold": 3,
+                            "initialDelaySeconds": 3,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "resources": {
+                            "limits": {
+                                "memory": "512Mi"
+                            }
+                        },
+                        "securityContext": {
+                            "capabilities": {},
+                            "privileged": false
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/lib/mongodb/data",
+                                "name": "national-parks-mongodb-gck-dev-data"
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "restartPolicy": "Always",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 30,
+                "volumes": [
+                    {
+                        "name": "national-parks-mongodb-gck-dev-data",
+                        "persistentVolumeClaim": {
+                            "claimName": "national-parks-mongodb-gck-dev"
+                        }
+                    }
+                ]
+            }
+        },
+        "test": false,
+        "triggers": [
+            {
+                "imageChangeParams": {
+                    "automatic": true,
+                    "containerNames": [
+                        "mongodb"
+                    ],
+                    "from": {
+                        "kind": "ImageStreamTag",
+                        "name": "mongodb:3.2",
+                        "namespace": "openshift"
+                    },
+                    "lastTriggeredImage": "registry.access.redhat.com/rhscl/mongodb-32-rhel7@sha256:b9f3dda57d96f421ed8880634d356c7bf2d54d5015cba508417e36c4e9182489"
+                },
+                "type": "ImageChange"
+            },
+            {
+                "type": "ConfigChange"
+            }
+        ]
+    },
+    "status": {
+        "availableReplicas": 1,
+        "conditions": [
+            {
+                "lastTransitionTime": "2017-08-09T11:53:10Z",
+                "lastUpdateTime": "2017-08-09T11:53:10Z",
+                "message": "Deployment config has minimum availability.",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "lastTransitionTime": "2017-08-09T11:52:59Z",
+                "lastUpdateTime": "2017-08-09T11:53:11Z",
+                "message": "replication controller \"national-parks-mongodb-gck-dev-1\" successfully rolled out",
+                "reason": "NewReplicationControllerAvailable",
+                "status": "True",
+                "type": "Progressing"
+            }
+        ],
+        "details": {
+            "causes": [
+                {
+                    "imageTrigger": {
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "mongodb:3.2",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "ImageChange"
+                }
+            ],
+            "message": "image change"
+        },
+        "latestVersion": 1,
+        "observedGeneration": 2,
+        "readyReplicas": 1,
+        "replicas": 1,
+        "unavailableReplicas": 0,
+        "updatedReplicas": 1
+    }
+}

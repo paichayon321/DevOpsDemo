@@ -1,0 +1,11 @@
+##### --- git hook config for nationalparks
+
+#!/bin/bash
+
+while read oldrev newrev refname
+do
+    branch=$(git rev-parse --symbolic --abbrev-ref $refname)
+    if [[ "$branch" == "master" ]]; then
+    	curl -k -X POST --user ganck-admin:39230480d1915acfc72b4efdf77f0699 http://jenkins/job/nationalparks/build
+    fi
+done

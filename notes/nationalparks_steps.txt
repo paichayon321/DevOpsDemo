@@ -1,0 +1,306 @@
+##########################################################################################
+Note:
+
+* Remember to provide sufficient PVs
+** In order to use SonarQube, need to move the <version> to the top and remove the -RELEASE from the version number
+
+
+<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>3.0.1</version>
+			</plugin>
+            <plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.7.6.201602180812</version>
+				<executions>
+					<execution>
+						<id>default-prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>default-report</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+            
+
+##########################################################################################
+
+
+1. Create Projects
+
+oc new-project tools --display-name="Tools"
+oc new-project dev --display-name="Development Environment"
+oc new-project prod --display-name="Production Environment"
+oc new-project test --display-name="Test Environment"
+
+oc policy add-role-to-user edit system:serviceaccount:tools:jenkins -n dev
+oc policy add-role-to-user edit system:serviceaccount:tools:jenkins -n prod
+oc policy add-role-to-user edit system:serviceaccount:tools:jenkins -n test
+
+oc policy add-role-to-user system:image-puller system:serviceaccount:test:default -n dev
+oc policy add-role-to-user system:image-puller system:serviceaccount:prod:default -n dev
+oc policy add-role-to-user system:image-puller system:serviceaccount:prod:default -n test
+-- oc policy add-role-to-user system:image-puller system:serviceaccount:tools:jenkins -n dev
+-- oc policy add-role-to-user system:image-puller system:serviceaccount:tools:jenkins -n pre-prod
+
+#########################################################
+
+2. Deploy Gogs
+
+oc new-app -f http://bit.ly/openshift-gogs-persistent-template --param=SKIP_TLS_VERIFY=true -n tools
+
+Reference: https://github.com/OpenShiftDemos/gogs-openshift-docker
+
+#########################################################
+
+4. Deploy Nexus3
+
+oc new-app sonatype/nexus3 -n tools
+oc expose svc nexus3 -n tools
+*** need to create PV and allocate PVC for /nexus-data
+
+-- not working -- oc patch dc nexus3 -n tools --patch '"spec": {"containers": [{"livenessProbe": {"exec": {"command": ["echo","ok"]}, "failureThreshold": 3, "initialDelaySeconds": 30, "periodSeconds": 10,"successThreshold": 1, "timeoutSeconds": 1}},"readinessProbe": {"failureThreshold": 3,"httpGet": {"path": "/","port": 8081,"scheme": "HTTP"},"initialDelaySeconds": 30,"periodSeconds": 10,"successThreshold": 1,"timeoutSeconds": 1}]}'
+
+# --- populate the Red Hat repositories
+
+curl -o setup_nexus3.sh -s https://raw.githubusercontent.com/wkulhanek/ocp_advanced_development_resources/master/nexus/setup_nexus3.sh
+chmod +x setup_nexus3.sh
+./setup_nexus3.sh admin admin123 http://$(oc get route nexus3 -n tools --template='{{ .spec.host }}')
+rm setup_nexus3.sh
+
+#########################################################
+
+5. Create SonarQube
+
+oc new-app postgresql-persistent -n tools -p DATABASE_SERVICE_NAME=sonar-postgresql -p POSTGRESQL_USER=sonar -p POSTGRESQL_PASSWORD=sonar -p POSTGRESQL_DATABASE=sonar -p VOLUME_CAPACITY=10Gi
+oc new-app docker.io/openshiftdemos/sonarqube:6.0 -e SONARQUBE_JDBC_USERNAME=sonar -e SONARQUBE_JDBC_PASSWORD=sonar -e SONARQUBE_JDBC_URL=jdbc:postgresql://sonar-postgresql/sonar -n tools
+oc expose service sonarqube -n tools
+
+-- Notes: In order to use sonarqube, the following need to be added into pom.xml
+
+<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>3.0.1</version>
+			</plugin>
+            <plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.7.6.201602180812</version>
+				<executions>
+					<execution>
+						<id>default-prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>default-report</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+#########################################################
+
+6. Deploy Jenkins
+
+oc new-app jenkins-persistent -n tools
+Note: need to add user.name and user.email at the jenkins's pipeline configuration.
+
+#########################################################
+
+6. Dev environment preparation
+
+// ----------- nationalparks --------------------- //
+oc new-app mongodb-persistent -n dev -p DATABASE_SERVICE_NAME=national-parks-mongodb-dev -p MONGODB_USER=mongodb -p MONGODB_PASSWORD=mongodb -p MONGODB_DATABASE=mongodb -p MONGODB_ADMIN_PASSWORD=mongodb
+oc new-build --binary=true --name="nationalparks" redhat-openjdk18-openshift:latest -n dev
+oc new-app dev/nationalparks:DevelopmentReady-1.0.0 --name=nationalparks --allow-missing-imagestream-tags=true -n dev
+oc set triggers dc nationalparks --remove-all -n dev
+oc env bc nationalparks -e MAVEN_MIRROR_URL=http://nexus3-tools.ocp.demo.com/repository/maven-all-public -n dev
+oc expose dc nationalparks --port 8080 -n dev
+oc expose svc nationalparks -n dev
+
+//-- Create the environmental variable as the following and then modify to use configmap
+oc env dc/nationalparks MONGODB_SERVER_HOST=national-parks-mongodb-dev MONGODB_SERVER_PORT=27017 MONGODB_USER=mongodb MONGODB_PASSWORD=mongodb MONGODB_DATABASE=mongodb -n dev
+
+//-- create the following configmap
+oc create configmap nationalparks -n dev --from-literal=mongodb.server.host=national-parks-mongodb-dev \
+--from-literal=mongodb.server.port=27017 \
+--from-literal=mongodb.user=mongodb \
+--from-literal=mongodb.password=mongodb \
+--from-literal=mongodb.database=mongodb
+
+//--- Modify the environmental variable to use configmap
+- env:
+        - name: MONGODB_SERVER_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.server.host
+              name: nationalparks
+        - name: MONGODB_SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.server.port
+              name: nationalparks
+        - name: MONGODB_USER
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.user
+              name: nationalparks
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.password
+              name: nationalparks
+        - name: MONGODB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.database
+              name: nationalparks
+
+// --- Remove configmap and volume
+--- oc delete configmap nationalparks -n dev
+--- oc volume dc/nationalparks --remove --name=volume-xfqdc -n dev
+
+#########################################################
+
+7. Test Environment
+
+// ----------- nationalparks --------------------- //
+oc new-app mongodb-persistent -n test -p DATABASE_SERVICE_NAME=national-parks-mongodb-test -p MONGODB_USER=mongodb -p MONGODB_PASSWORD=mongodb -p MONGODB_DATABASE=mongodb -p MONGODB_ADMIN_PASSWORD=mongodb
+oc new-app dev/nationalparks:TestReady-1.0.0 --name=nationalparks --allow-missing-imagestream-tags=true -n test
+--- oc new-app dev/nationalparks:TestReady-1.0.0 --name=nationalparks -n test
+oc expose dc nationalparks --port 8080 -n test
+oc expose svc nationalparks -n test
+-- oc tag dev/nationalparks:DevelopmentReady-1.0.0 dev/nationalparks:TestReady-1.0.0
+
+//-- Create the environmental variable as the following and then modify to use configmap
+oc env dc/nationalparks MONGODB_SERVER_HOST=national-parks-mongodb-test MONGODB_SERVER_PORT=27017 MONGODB_USER=mongodb MONGODB_PASSWORD=mongodb MONGODB_DATABASE=mongodb -n test
+
+//-- create the following configmap
+oc create configmap nationalparks -n test --from-literal=mongodb.server.host=national-parks-mongodb-test \
+--from-literal=mongodb.server.port=27017 \
+--from-literal=mongodb.user=mongodb \
+--from-literal=mongodb.password=mongodb \
+--from-literal=mongodb.database=mongodb
+
+//--- Modify the environmental variable to use configmap
+- env:
+        - name: MONGODB_SERVER_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.server.host
+              name: nationalparks
+        - name: MONGODB_SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.server.port
+              name: nationalparks
+        - name: MONGODB_USER
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.user
+              name: nationalparks
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.password
+              name: nationalparks
+        - name: MONGODB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.database
+              name: nationalparks
+
+
+
+#########################################################
+
+8. Production Environment
+
+// ----------- nationalparks --------------------- //
+oc new-app mongodb-persistent -n prod -p DATABASE_SERVICE_NAME=national-parks-mongodb-prod -p MONGODB_USER=mongodb -p MONGODB_PASSWORD=mongodb -p MONGODB_DATABASE=mongodb -p MONGODB_ADMIN_PASSWORD=mongodb
+oc new-app dev/nationalparks:ProdReady-1.0.0 --name=nationalparks-green --allow-missing-imagestream-tags=true -n prod
+oc new-app dev/nationalparks:ProdReady-1.0.0 --name=nationalparks-blue --allow-missing-imagestream-tags=true -n prod
+oc expose dc nationalparks-green --port 8080 -n prod
+oc expose dc nationalparks-blue --port 8080 -n prod
+oc expose svc/nationalparks-green --name=nationalparks-bluegreen -n prod
+-- oc tag dev/nationalparks:TestReady-1.0.0 dev/nationalparks:ProdReady-1.0.0
+-- oc tag dev/nationalparks:ProdReady-1.0.0 dev/nationalparks:ProdReady-live-1.0.0
+
+//-- Create the environmental variable as the following and then modify to use configmap
+oc env dc/nationalparks-green MONGODB_SERVER_HOST=national-parks-mongodb-prod MONGODB_SERVER_PORT=27017 MONGODB_USER=mongodb MONGODB_PASSWORD=mongodb MONGODB_DATABASE=mongodb -n prod
+oc env dc/nationalparks-blue MONGODB_SERVER_HOST=national-parks-mongodb-prod MONGODB_SERVER_PORT=27017 MONGODB_USER=mongodb MONGODB_PASSWORD=mongodb MONGODB_DATABASE=mongodb -n prod
+
+//-- create the following configmap
+oc create configmap nationalparks -n prod --from-literal=mongodb.server.host=national-parks-mongodb-prod \
+--from-literal=mongodb.server.port=27017 \
+--from-literal=mongodb.user=mongodb \
+--from-literal=mongodb.password=mongodb \
+--from-literal=mongodb.database=mongodb
+
+//--- Modify the environmental variable to use configmap
+- env:
+        - name: MONGODB_SERVER_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.server.host
+              name: nationalparks
+        - name: MONGODB_SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.server.port
+              name: nationalparks
+        - name: MONGODB_USER
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.user
+              name: nationalparks
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.password
+              name: nationalparks
+        - name: MONGODB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              key: mongodb.database
+              name: nationalparks
+
+
+oc env dc/nationalparks-green PROD_ENV_VERSION="Green Server" -n prod
+oc env dc/nationalparks-blue PROD_ENV_VERSION="Blue Server" -n prod
+
+oc patch dc nationalparks-green --patch "{\"spec\": { \"triggers\": []}}" -n prod
+oc patch dc nationalparks-blue --patch "{\"spec\": { \"triggers\": []}}" -n prod
+
+#########################################################
+
+9. Enable web hook in Gogs
+
+// ----------- nationalparks --------------------- //
+
+#!/bin/bash
+
+while read oldrev newrev refname
+do
+    branch=$(git rev-parse --symbolic --abbrev-ref $refname)
+    if [[ "$branch" == "master" ]]; then
+    	curl -k -X POST --user ganck-admin:39230480d1915acfc72b4efdf77f0699 http://jenkins/job/nationalparks/build
+    fi
+done
+
+
