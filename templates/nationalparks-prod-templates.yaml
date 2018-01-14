@@ -52,27 +52,27 @@ objects:
             valueFrom:
               configMapKeyRef:
                 key: mongodb.server.host
-                name: nationalparks
+                name: ${APPLICATION_NAME}
           - name: MONGODB_SERVER_PORT
             valueFrom:
               configMapKeyRef:
                 key: mongodb.server.port
-                name: nationalparks
+                name: ${APPLICATION_NAME}
           - name: MONGODB_USER
             valueFrom:
               configMapKeyRef:
                 key: mongodb.user
-                name: nationalparks
+                name: ${APPLICATION_NAME}
           - name: MONGODB_PASSWORD
             valueFrom:
               configMapKeyRef:
                 key: mongodb.password
-                name: nationalparks
+                name: ${APPLICATION_NAME}
           - name: MONGODB_DATABASE
             valueFrom:
               configMapKeyRef:
                 key: mongodb.database
-                name: nationalparks
+                name: ${APPLICATION_NAME}
           image: ${IMAGE_PROJECT_NAME}/${APPLICATION_NAME}:${IMAGE_NAME}-${IMAGE_VERSION}
           imagePullPolicy: IfNotPresent
           name: ${APPLICATION_NAME}
