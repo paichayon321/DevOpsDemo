@@ -310,7 +310,7 @@ parameters:
 - description: Maven Mirror URL
   displayName: Maven Mirror URL
   name: MAVEN_MIRROR_URL
-  value: http://nexus3-tools.ocp.demo.com/repository/maven-all-public
+  value: http://nexus3:8081/repository/maven-all-public
   required: true
 - description: Image Name
   displayName: Image Name
