@@ -1,8 +1,0 @@
-dnsmasq config
-==============
-
-server=/local/10.0.2.15#8053
-server=/ocp.demo.com/10.0.2.15#8053
-server=/172.30.59.in-addr.arpa/10.0.2.15#8053
-server=8.8.8.8
-server=8.8.4.4
