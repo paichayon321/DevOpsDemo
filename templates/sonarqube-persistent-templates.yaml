@@ -114,6 +114,16 @@ objects:
     resources:
       requests:
         storage: ${POSTGRESQL_VOLUME_CAPACITY}
+- kind: PersistentVolumeClaim
+  apiVersion: v1
+  metadata:
+    name: ${APPLICATION_NAME}
+  spec:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${APPLICATION_NAME_VOLUME_CAPACITY}
 - apiVersion: v1
   kind: ImageStream
   metadata:
@@ -196,10 +206,17 @@ objects:
           name: ${APPLICATION_NAME}
           resources: {}
           terminationMessagePath: /dev/termination-log
+          volumeMounts:
+            - mountPath: /opt/sonarqube/extensions/plugins
+              name: ${APPLICATION_NAME}-data
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         securityContext: {}
         terminationGracePeriodSeconds: 30
+        volumes:
+        - name: ${APPLICATION_NAME}-data
+          persistentVolumeClaim:
+            claimName: ${APPLICATION_NAME}
     test: false
     triggers:
     - type: ConfigChange
@@ -224,8 +241,12 @@ parameters:
   name: SONARQUBE_VERSION
   required: true
   value: "6.0"
-- description: The exposed route/host name
+- description: PostgreSQL Volume Capacity
   name: POSTGRESQL_VOLUME_CAPACITY
+  required: true
+  value: 5Gi
+- description: Application Volume Capacity
+  name: APPLICATION_NAME_VOLUME_CAPACITY
   required: true
   value: 5Gi
 - description: Postgresql Database
