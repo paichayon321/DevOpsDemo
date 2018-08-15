@@ -7,3 +7,10 @@ For instrucstions for how to setup this demo, please refer to the init.sh and in
 2. chmod +x init.sh initGods.sh
 3. Run ./init.sh -h to view the instructions.
 4. Run ./initGogs.sh -h to view the instructions.
+
+## Notes
+
+1. At the moment, there is minor mistake on the script to configure the necessary repo for Nexus. You will need to exxecute the setup_nexus.sh to configure the nexus after the POD is running.
+Do the following:
+chmod +x set_nexxus.sh
+/setup_nexus3.sh admin admin123 http://nexus3-pm-tools.<subdomain>
