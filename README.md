@@ -11,6 +11,6 @@ For instrucstions for how to setup this demo, please refer to the init.sh and in
 ## Notes
 
 1. At the moment, there is minor mistake on the script to configure the necessary repo for Nexus. You will need to exxecute the setup_nexus.sh to configure the nexus after the POD is running.
-Do the following:
+Do the following:<br>
 chmod +x set_nexxus.sh <br>
 /setup_nexus3.sh admin admin123 http://nexus3-pm-tools.<subdomain>
