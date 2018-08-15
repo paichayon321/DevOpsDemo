@@ -14,3 +14,5 @@ For instrucstions for how to setup this demo, please refer to the init.sh and in
 Do the following:<br>
 chmod +x set_nexus.sh <br>
 /setup_nexus3.sh admin admin123 http://nexus3-pm-tools. &lt;subdomain&gt;
+
+2. To configure git hook, refers to the document at the notes folder
