@@ -4,7 +4,7 @@ For instrucstions for how to setup this demo, please refer to the init.sh and in
 
 1. Clone this github repos into your local drive.
 2. Change directory to bin
-2. chmod +x init.sh initGods.sh
+2. chmod +x init.sh initGogs.sh
 3. Run ./init.sh -h to view the instructions.
 4. Run ./initGogs.sh -h to view the instructions.
 
